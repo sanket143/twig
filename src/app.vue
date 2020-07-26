@@ -1,32 +1,45 @@
 <template>
-  <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
+  <div id="view" class="h-full grid">
+    <Navbar />
+    <div id="main" class="flex">
+      <div id="sidebar" class="w-48 p-2 bg-green-600 text-white">
+        <h1>Sidebar</h1>
+      </div>
+      <div id="main" class="p-2">
+        <router-view/>
+      </div>
     </div>
-    <router-view/>
   </div>
 </template>
 
+<script>
+import Navbar from "@/components/navbar.vue"
+
+export default {
+  components: {
+    Navbar
+  }
+}
+</script>
+
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
+@font-face {
+  font-family: 'Noto Sans';
+  font-style: normal;
+  font-display: swap;
+  src: local('Noto Sans'), format('ttf');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-#nav {
-  padding: 30px;
+body, html {
+  font-family: 'Noto Sans', sans-serif;
 }
 
-#nav a {
-  font-weight: bold;
-  color: #2c3e50;
+body, html, #app {
+  height: 100%;
 }
 
-#nav a.router-link-exact-active {
-  color: #42b983;
+#view {
+  grid-template-rows: 40px auto;
 }
 </style>
