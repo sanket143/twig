@@ -31,7 +31,6 @@ fn fetch_inbox_top(msg_number: String) -> imap::error::Result<Option<String>> {
   // the client we have here is unauthenticated.
   // to do anything useful with the e-mails, we need to log in
 
-
   let email = dotenv::var("TWIG_EMAIL").unwrap();
   let password = dotenv::var("TWIG_PASSWORD").unwrap();
 
@@ -52,20 +51,13 @@ fn fetch_inbox_top(msg_number: String) -> imap::error::Result<Option<String>> {
   };
 
   // extract the message's body
-  println!("[{}] {:?}", msg_number, std::str::from_utf8(message.body().unwrap()));
   let body = message.body().unwrap();
-
-  unsafe {
-    let body = std::str::from_utf8_unchecked(body)
-      .to_string();
-  }
 
   // be nice to the server and log out
   imap_session.logout()?;
 
   let pm = mailparse::parse_mail(&body).unwrap();
 
-  println!(">> Addresses from blah <<");
   pm.headers
     .get_first_value("From")
     .map(|a| println!("{:?}", mailparse::addrparse(&a).unwrap()));
@@ -78,16 +70,6 @@ fn fetch_inbox_top(msg_number: String) -> imap::error::Result<Option<String>> {
   pm.headers
     .get_first_value("Bcc")
     .map(|a| println!("{:?}", mailparse::addrparse(&a).unwrap()));
-
-  if pm.ctype.mimetype.starts_with("text/") {
-    println!("  [{}]", pm.get_body().unwrap());
-  } else {
-    println!(
-      "   (Body is binary type {}, {} bytes in length)",
-      pm.ctype.mimetype,
-      pm.get_body().unwrap().len()
-    );
-  }
 
   let body = match pm.subparts.len() {
     0 => {
@@ -109,7 +91,7 @@ fn sign_in_handler(msg: Option<String>) -> String {
 fn main() {
   tauri::AppBuilder::new()
     .setup(|webview, _source| {
-      let mut webview = webview.as_mut();
+      let webview = webview.as_mut();
       let mut webview_clone = webview.clone();
 
       tauri::event::listen(String::from("sign-in"), move |msg| {
@@ -120,21 +102,6 @@ fn main() {
         tauri::event::emit(
           &mut webview_clone,
           String::from("mail-fetch"),
-          Some(serde_json::to_string(&reply).unwrap()),
-        )
-        .expect("failed to emit");
-      });
-
-      let mut webview_clone = webview.clone();
-
-      tauri::event::listen(String::from("js-event"), move |msg| {
-        let reply = Reply {
-          data: msg.unwrap(),
-        };
-
-        tauri::event::emit(
-          &mut webview_clone,
-          String::from("rust-event"),
           Some(serde_json::to_string(&reply).unwrap()),
         )
         .expect("failed to emit");

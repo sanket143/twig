@@ -2,7 +2,7 @@
   <div id="view" class="h-full grid">
     <Navbar />
     <div id="main" class="flex">
-      <div id="sidebar" class="w-48 p-2 bg-green-600 text-white">
+      <div id="sidebar" class="p-2 bg-green-600 text-white">
         <h1>Sidebar</h1>
       </div>
       <div id="main" class="p-2">
@@ -41,5 +41,9 @@ body, html, #app {
 
 #view {
   grid-template-rows: 40px auto;
+}
+
+#sidebar {
+  width: 350px;
 }
 </style>

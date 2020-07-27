@@ -1,24 +1,20 @@
 <template>
   <div class="home">
     <h1>Home</h1>
-    <input
-      v-model="msg"
-      class="border p-1"
-      type="text"
-    >
+    <form @submit.prevent="signIn">
+      <input
+        v-model="msg"
+        class="border p-1"
+        type="text"
+      >
+    </form>
     <br>
-    <button
-      class="border my-2 p-1"
-      @click="signIn"
-    >
-      Sign In
-    </button><br>
     <Mail />
   </div>
 </template>
 
 <script>
-import { emit, listen } from "tauri/api/event"
+import { emit } from "tauri/api/event"
 import Mail from "@/components/mail.vue"
 
 export default {
@@ -31,16 +27,9 @@ export default {
       msg: ""
     }
   },
-  mounted(){
-    listen("rust-event", (response) => {
-      console.log(response.payload)
-    })
-  },
   methods: {
-    sendMessage(){
-      emit("js-event", this.msg)
-    },
     signIn(){
+      console.log(this.msg)
       emit("sign-in", this.msg)
     }
   }
