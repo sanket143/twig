@@ -9,24 +9,23 @@
     <br>
     <button
       class="border my-2 p-1"
-      @click="sendMessage"
-    >
-      Send
-    </button>
-    <button
-      class="border my-2 p-1"
       @click="signIn"
     >
       Sign In
-    </button>
+    </button><br>
+    <Mail />
   </div>
 </template>
 
 <script>
 import { emit, listen } from "tauri/api/event"
+import Mail from "@/components/mail.vue"
 
 export default {
   name: "Home",
+  components: {
+    Mail
+  },
   data(){
     return {
       msg: ""

@@ -7,8 +7,10 @@ mod cmd;
 
 use dotenv;
 use serde::Serialize;
+use mailparse::MailHeaderMap;
 
 extern crate imap;
+extern crate mailparse;
 extern crate native_tls;
 
 #[derive(Serialize)]
@@ -16,7 +18,7 @@ struct Reply {
   data: String,
 }
 
-fn fetch_inbox_top() -> imap::error::Result<Option<String>> {
+fn fetch_inbox_top(msg_number: String) -> imap::error::Result<Option<String>> {
   dotenv::dotenv().ok();
 
   let domain = "imap.gmail.com";
@@ -42,7 +44,7 @@ fn fetch_inbox_top() -> imap::error::Result<Option<String>> {
 
   // fetch message number 1 in this mailbox, along with its RFC822 field.
   // RFC 822 dictates the format of the body of e-mails
-  let messages = imap_session.fetch("1", "RFC822")?;
+  let messages = imap_session.fetch(&msg_number, "RFC822")?;
   let message = if let Some(m) = messages.iter().next() {
     m
   } else {
@@ -50,37 +52,88 @@ fn fetch_inbox_top() -> imap::error::Result<Option<String>> {
   };
 
   // extract the message's body
-  let body = message.body().expect("message did not have a body!");
-  let body = std::str::from_utf8(body)
-    .expect("message was not valid utf-8")
-    .to_string();
+  println!("[{}] {:?}", msg_number, std::str::from_utf8(message.body().unwrap()));
+  let body = message.body().unwrap();
+
+  unsafe {
+    let body = std::str::from_utf8_unchecked(body)
+      .to_string();
+  }
 
   // be nice to the server and log out
   imap_session.logout()?;
 
+  let pm = mailparse::parse_mail(&body).unwrap();
+
+  println!(">> Addresses from blah <<");
+  pm.headers
+    .get_first_value("From")
+    .map(|a| println!("{:?}", mailparse::addrparse(&a).unwrap()));
+  pm.headers
+    .get_first_value("To")
+    .map(|a| println!("{:?}", mailparse::addrparse(&a).unwrap()));
+  pm.headers
+    .get_first_value("Cc")
+    .map(|a| println!("{:?}", mailparse::addrparse(&a).unwrap()));
+  pm.headers
+    .get_first_value("Bcc")
+    .map(|a| println!("{:?}", mailparse::addrparse(&a).unwrap()));
+
+  if pm.ctype.mimetype.starts_with("text/") {
+    println!("  [{}]", pm.get_body().unwrap());
+  } else {
+    println!(
+      "   (Body is binary type {}, {} bytes in length)",
+      pm.ctype.mimetype,
+      pm.get_body().unwrap().len()
+    );
+  }
+
+  let body = match pm.subparts.len() {
+    0 => {
+      pm.get_body().unwrap()
+    },
+    _ => {
+      pm.subparts[pm.subparts.len() - 1].get_body().unwrap()
+    }
+  };
+
   Ok(Some(body))
 }
 
-fn sign_in_handler(data: Option<String>) {
-  println!("signInHandler '{:?}'", data);
-  println!("{:?}", fetch_inbox_top().unwrap().unwrap());
+fn sign_in_handler(msg: Option<String>) -> String {
+
+  fetch_inbox_top(msg.unwrap()).unwrap().unwrap()
 }
 
 fn main() {
   tauri::AppBuilder::new()
     .setup(|webview, _source| {
       let mut webview = webview.as_mut();
+      let mut webview_clone = webview.clone();
 
-      tauri::event::listen(String::from("sign-in"), sign_in_handler);
+      tauri::event::listen(String::from("sign-in"), move |msg| {
+        let reply = Reply {
+          data: sign_in_handler(msg),
+        };
+
+        tauri::event::emit(
+          &mut webview_clone,
+          String::from("mail-fetch"),
+          Some(serde_json::to_string(&reply).unwrap()),
+        )
+        .expect("failed to emit");
+      });
+
+      let mut webview_clone = webview.clone();
 
       tauri::event::listen(String::from("js-event"), move |msg| {
-
         let reply = Reply {
           data: msg.unwrap(),
         };
 
         tauri::event::emit(
-          &mut webview,
+          &mut webview_clone,
           String::from("rust-event"),
           Some(serde_json::to_string(&reply).unwrap()),
         )
