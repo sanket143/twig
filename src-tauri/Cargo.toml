@@ -10,6 +10,9 @@ edition = "2018"
 build = "src/build.rs"
 
 [dependencies]
+imap = "2.1"
+dotenv = "0.15"
+native-tls = "0.2"
 serde_json = "1.0"
 serde = { version = "1.0", features = [ "derive" ] }
 tauri = { version = "0.8", features = [ "all-api" ] }
